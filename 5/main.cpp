@@ -8,6 +8,7 @@
 #include <iostream>
 #include <ranges>
 #include <algorithm>
+#include <numeric>
 
 std::string trim(const std::string& str)
 {
@@ -84,6 +85,12 @@ int main()
         if (id_in_ranges(id, fresh_ingredients)) fresh_count++;
     }
 
+    long long total_possible_fresh_ingredients = std::accumulate(fresh_ingredients.begin(), fresh_ingredients.end(), 0LL,
+        [](long long sum, const std::pair<long long,long long>& p) {
+            return sum + (p.second - p.first + 1);
+        });
+
     std::cout << "Fresh count: " << fresh_count << "\n";
+    std::cout << "Total possible fresh ingredients: " << total_possible_fresh_ingredients;
 
 }
