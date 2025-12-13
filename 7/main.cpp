@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include <set>
+#include <chrono>
 
 int task_one()
 {
@@ -38,58 +39,60 @@ int task_one()
     return 0;
 }
 
+long long dfs(
+    int x,
+    int y,
+    const std::vector<std::string>& rows,
+    std::vector<std::vector<long long>>& memo,
+    int H,
+    int W
+)
+{
+    // reached bottom
+    if (y == H - 1)
+        return 1;
+
+    long long& res = memo[y][x];
+    if (res != -1)
+        return res;
+
+    if (rows[y][x] == '^')
+        res = dfs(x - 1, y + 1, rows, memo, H, W)
+            + dfs(x + 1, y + 1, rows, memo, H, W);
+    else
+        res = dfs(x, y + 1, rows, memo, H, W);
+
+    return res;
+}
+
 int task_two()
 {
     std::ifstream file("input.txt");
     std::vector<std::string> rows;
     std::string line;
-    std::vector<std::pair<int, int>> dfs_stack;
-    std::pair<int, int> pos = {0,0};
-    int path_count = 0;
 
     while (std::getline(file, line))
-    {
         rows.push_back(line);
-    };
 
-    while (true)
-    {
-        // start position
-        if (pos.first == 0 and pos.second == 0) pos = {rows[0].find('S'), 0};
-        else
-        {
-            if (rows[pos.second][pos.first] == '^')
-            {
-                // add splitter to dfs stack
-                dfs_stack.push_back(pos);
-                // go left and down
-                pos.first--;
-                pos.second++;
-            } else if (pos.second == rows.size() - 1)
-            {
-                // reached bottom, increment path count
-                path_count++;
-                // if no more paths to follow, break out of loop
-                if (dfs_stack.empty()) break;
-                // if more paths to follow, go back to last splitter and go right and down
-                auto last_splitter = dfs_stack.back();
-                pos.first = last_splitter.first + 1;
-                pos.second = last_splitter.second + 1;
-                // both paths followed for splitter, remove it
-                dfs_stack.pop_back();
-            } else
-            {
-                // go straight down
-                pos.second++;
-            }
-        }
-    }
-    std::cout << path_count << std::endl;
+    int H = rows.size();
+    int W = rows[0].size();
+
+    std::vector<std::vector<long long>> memo(
+        H, std::vector<long long>(W, -1)
+    );
+
+    int start_x = rows[0].find('S');
+    long long path_count = dfs(start_x, 0, rows, memo, H, W);
+
+    std::cout << path_count << "\n";
     return 0;
 }
-
 int main()
 {
+    auto start = std::chrono::high_resolution_clock::now();
     task_two();
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration = end - start;
+    std::cout << "Execution time: " << duration.count() << " seconds." << std::endl;
     return 0;
 }
