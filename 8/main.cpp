@@ -10,12 +10,12 @@ struct Box
     int x, y, z;
 };
 
-double euclidean_distance(const Box& a, const Box& b)
+double distance(const Box& a, const Box& b)
 {
     const double dx = a.x - b.x;
     const double dy = a.y - b.y;
     const double dz = a.z - b.z;
-    return sqrt(dx*dx + dy*dy + dz*dz);
+    return dx*dx + dy*dy + dz*dz;
 }
 
 struct DSU
@@ -34,17 +34,19 @@ struct DSU
         return parent[x];
     }
 
-    void unite(int a, int b)
+    bool unite(int a, int b)
     {
         a = find(a);
         b = find(b);
-        if (a != b)
-            parent[b] = a;
+        if (a == b) return false;
+        parent[b] = a;
+        return true;
     }
 };
 
-long long task_one() {
-    ifstream file("input.txt");
+vector<Box> read_input(const string& filename)
+{
+    ifstream file(filename);
     vector<Box> boxes;
     string line;
 
@@ -56,25 +58,35 @@ long long task_one() {
         ss >> v.x >> comma >> v.y >> comma >> v.z;
         boxes.push_back(v);
     }
+    return boxes;
+}
 
-    vector<pair<double, pair<int, int>>> distances;
-
+vector<pair<double, pair<int,int>>> build_distances(const vector<Box>& boxes)
+{
+    vector<pair<double, pair<int,int>>> distances;
     for (int i = 0; i < (int)boxes.size(); ++i)
     {
         for (int j = i + 1; j < (int)boxes.size(); ++j)
         {
             distances.push_back({
-                euclidean_distance(boxes[i], boxes[j]),
+                distance(boxes[i], boxes[j]),
                 {i, j}
             });
         }
     }
-
     ranges::sort(distances);
+    return distances;
+}
+
+long long part_one(
+    const vector<Box>& boxes,
+    const vector<pair<double, pair<int,int>>>& distances,
+    int edges_used
+)
+{
     DSU dsu(boxes.size());
 
-    int edges_used = min(1000, static_cast<int>(distances.size()));
-    for (int i = 0; i < edges_used; ++i)
+    for (int i = 0; i < edges_used && i < static_cast<int>(distances.size()); ++i)
     {
         auto [a, b] = distances[i].second;
         dsu.unite(a, b);
@@ -94,13 +106,44 @@ long long task_one() {
     return 1LL * sizes[0] * sizes[1] * sizes[2];
 }
 
+
+long long part_two(
+    const vector<Box>& boxes,
+    const vector<pair<double, pair<int,int>>>& distances
+)
+{
+    DSU dsu(boxes.size());
+    int components = boxes.size();
+    pair<int,int> last_edge{-1, -1};
+
+    for (const auto &val: distances | views::values)
+    {
+        auto [a, b] = val;
+        if (dsu.unite(a, b))
+        {
+            components--;
+            last_edge = {a, b};
+            if (components == 1)
+                break;
+        }
+    }
+
+    return 1LL * boxes[last_edge.first].x * boxes[last_edge.second].x;
+}
+
 int main() {
-    const auto start = chrono::high_resolution_clock::now();
+    auto start = chrono::high_resolution_clock::now();
 
-    const long long result = task_one();
-    cout << "Result: " << result << '\n';
+    vector<Box> boxes = read_input("input.txt");
+    auto distances = build_distances(boxes);
 
-    const auto end = chrono::high_resolution_clock::now();
+    long long p1 = part_one(boxes, distances, 1000);
+    long long p2 = part_two(boxes, distances);
+
+    cout << "Part One: " << p1 << '\n';
+    cout << "Part Two: " << p2 << '\n';
+
+    auto end = chrono::high_resolution_clock::now();
     chrono::duration<double> duration = end - start;
     cout << "Execution time: " << duration.count() << " seconds.\n";
 
